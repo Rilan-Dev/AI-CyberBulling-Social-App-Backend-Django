@@ -15,18 +15,12 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 from .models import Prediction, UserPredictModel
 
-# Determine model paths based on platform
-if platform.system() == 'Windows':
-    text_model_path = r"C:\Users\moham\OneDrive\Documents\Raafiya\Project\CyberBulling\CODEING\Deploy\Project\App\LSTM.h5"
-    dataset_path = r"C:\Users\moham\OneDrive\Documents\Raafiya\Project\CyberBulling\CODEING\Deploy\Project\App\CYBER.csv"
-    image_model_path = r"C:\Users\moham\OneDrive\Documents\Raafiya\Project\CyberBulling\CODEING\Deploy\Project\App\keras_model.h5"
-    images_path = r"C:\Users\moham\OneDrive\Documents\Raafiya\Project\CyberBulling\CODEING\Deploy\Project"
-else:
-    # Linux/Mac paths
-    text_model_path = "/mnt/c/Users/moham/OneDrive/Documents/Raafiya/Project/CyberBulling/CODEING/Deploy/Project/App/LSTM.h5"
-    dataset_path = "/mnt/c/Users/moham/OneDrive/Documents/Raafiya/Project/CyberBulling/CODEING/Deploy/Project/App/CYBER.csv"
-    image_model_path = "/mnt/c/Users/moham/OneDrive/Documents/Raafiya/Project/CyberBulling/CODEING/Deploy/Project/App/keras_model.h5"
-    images_path = "/mnt/c/Users/moham/OneDrive/Documents/Raafiya/Project/CyberBulling/CODEING/Deploy/Project"
+from django.conf import settings
+
+text_model_path = settings.TEXT_MODEL_PATH
+dataset_path = settings.CSV_DATASET_PATH
+image_model_path = settings.IMAGE_MODEL_PATH
+
 
 # Load models (lazy loading to avoid loading on import)
 text_model = None

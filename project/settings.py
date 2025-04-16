@@ -2,8 +2,14 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATASET_DIR = os.path.join(BASE_DIR, 'datasets')
+TEXT_MODEL_PATH = os.path.join(DATASET_DIR, 'LSTM.h5')
+IMAGE_MODEL_PATH = os.path.join(DATASET_DIR, 'keras_model.h5')
+CSV_DATASET_PATH = os.path.join(DATASET_DIR, 'CYBER.csv')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-your-secret-key-here'
