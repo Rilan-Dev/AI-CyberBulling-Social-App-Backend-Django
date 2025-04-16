@@ -17,7 +17,7 @@ COPY ./project/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy Django project files
-COPY ./project /app
+COPY . /app
 
 EXPOSE 8500
 
