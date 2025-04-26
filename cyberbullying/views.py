@@ -6,7 +6,7 @@ from .models import UserProfile, Post, Comment, TextAnalysisResult, ImageAnalysi
 from .serializers import (
     UserSerializer, UserProfileSerializer, RegisterSerializer,
     PostSerializer, CommentSerializer, UserProfileUpdateSerializer,
-    PostCreateUpdateSerializer, PostPartialUpdateSerializer  # Import the new serializers
+    PostCreateUpdateSerializer, PostPartialUpdateSerializer
 )
 import requests
 from django.conf import settings
@@ -60,37 +60,240 @@ from django.utils.decorators import method_decorator
 @method_decorator(csrf_exempt, name='dispatch')
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
+    @swagger_auto_schema(
+        operation_description="Get current user's profile",
+        responses={
+            200: UserProfileSerializer,
+            401: 'Unauthorized'
+        }
+    )
     def get(self, request):
         user = request.user
-        profile = user.profile  # Assuming you have a related profile
-        serializer = UserProfileSerializer(profile)
+        profile = user.profile
+        serializer = UserProfileSerializer(profile, context={'request': request})
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Update current user's profile",
+        request_body=UserProfileUpdateSerializer,
+        responses={
+            200: UserProfileSerializer,
+            400: 'Bad Request',
+            401: 'Unauthorized'
+        }
+    )
     def put(self, request):
         profile = get_object_or_404(UserProfile, user=request.user)
         serializer = UserProfileUpdateSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        
+        # Return the updated profile with full serializer
+        updated_serializer = UserProfileSerializer(profile, context={'request': request})
+        return Response(updated_serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Partially update current user's profile",
+        request_body=UserProfileUpdateSerializer,
+        responses={
+            200: UserProfileSerializer,
+            400: 'Bad Request',
+            401: 'Unauthorized'
+        }
+    )
+    def patch(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        serializer = UserProfileUpdateSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        # Return the updated profile with full serializer
+        updated_serializer = UserProfileSerializer(profile, context={'request': request})
+        return Response(updated_serializer.data)
 
 class PublicUserProfileView(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Get a user's public profile by username",
+        responses={
+            200: UserProfileSerializer,
+            404: 'User not found'
+        }
+    )
     def get(self, request, username):
         user = get_object_or_404(User, username=username)
         profile = get_object_or_404(UserProfile, user=user)
-        serializer = UserProfileSerializer(profile)
+        serializer = UserProfileSerializer(profile, context={'request': request})
+        return Response(serializer.data)
+
+class UserFollowView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Follow a user",
+        responses={
+            200: openapi.Response(
+                description="Follow status",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            ),
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            404: 'User not found'
+        }
+    )
+    def post(self, request, username):
+        user_to_follow = get_object_or_404(User, username=username)
         
-        # Add basic user info and post count
-        response_data = serializer.data
-        response_data['post_count'] = Post.objects.filter(user=user, status='clean').count()
-        response_data['is_following'] = False
+        # Can't follow yourself
+        if request.user == user_to_follow:
+            return Response(
+                {"error": "You cannot follow yourself"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        if request.user.is_authenticated:
-            response_data['is_following'] = request.user.profile.following.filter(id=user.id).exists()
+        # Add to following
+        request.user.profile.following.add(user_to_follow)
         
-        return Response(response_data)
+        return Response({"status": "following"})
+
+class UserUnfollowView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Unfollow a user",
+        responses={
+            200: openapi.Response(
+                description="Unfollow status",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            ),
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            404: 'User not found'
+        }
+    )
+    def post(self, request, username):
+        user_to_unfollow = get_object_or_404(User, username=username)
+        
+        # Remove from following
+        request.user.profile.following.remove(user_to_unfollow)
+        
+        return Response({"status": "unfollowed"})
+
+class UserFollowersView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Get a user's followers",
+        responses={
+            200: openapi.Response(
+                description="List of followers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'username': openapi.Schema(type=openapi.TYPE_STRING),
+                            'firstName': openapi.Schema(type=openapi.TYPE_STRING),
+                            'lastName': openapi.Schema(type=openapi.TYPE_STRING),
+                            'email': openapi.Schema(type=openapi.TYPE_STRING),
+                        }
+                    )
+                )
+            ),
+            404: 'User not found'
+        }
+    )
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        followers = user.followers.all()
+        serializer = UserSerializer(followers, many=True)
+        return Response(serializer.data)
+
+class UserFollowingView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Get users that a user is following",
+        responses={
+            200: openapi.Response(
+                description="List of users being followed",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'username': openapi.Schema(type=openapi.TYPE_STRING),
+                            'firstName': openapi.Schema(type=openapi.TYPE_STRING),
+                            'lastName': openapi.Schema(type=openapi.TYPE_STRING),
+                            'email': openapi.Schema(type=openapi.TYPE_STRING),
+                        }
+                    )
+                )
+            ),
+            404: 'User not found'
+        }
+    )
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        following = user.profile.following.all()
+        serializer = UserSerializer(following, many=True)
+        return Response(serializer.data)
+
+class UserPostsView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Get posts by a specific user",
+        responses={
+            200: PostSerializer(many=True),
+            404: 'User not found'
+        }
+    )
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        posts = Post.objects.filter(user=user, status='clean').order_by('-created_at')
+        serializer = PostSerializer(posts, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class UserSearchView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'first_name', 'last_name', 'email']
+
+    @swagger_auto_schema(
+        operation_description="Search for users",
+        manual_parameters=[
+            openapi.Parameter(
+                'q', 
+                openapi.IN_QUERY, 
+                description="Search query",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: UserSerializer(many=True),
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 # Post Views
 class PostViewSet(viewsets.ModelViewSet):
@@ -378,103 +581,6 @@ class PostViewSet(viewsets.ModelViewSet):
             image_analysis=image_analysis_report
         )
 
-    def _analyze_text(self, text):
-        # Default values
-        result = {
-            'status': 'clean',
-            'confidence': 0.95,
-            'reason': None
-        }
-        
-        if not text:
-            return result
-            
-        try:
-            # Create a mock request to pass to the ML view
-            mock_request = HttpRequest()
-            mock_request.method = 'POST'
-            mock_request.content_type = 'application/json'
-            mock_request.body = json.dumps({'text': text}).encode('utf-8')
-            
-            # Call the ML view directly
-            response = ml_text_api(mock_request)
-            ml_result = json.loads(response.content)
-            
-            if ml_result.get('success'):
-                result['status'] = ml_result.get('status', 'clean')
-                result['confidence'] = ml_result.get('confidence', 0.95)
-                result['reason'] = ml_result.get('reason')
-                
-                # Save analysis result if user is authenticated
-                if hasattr(self, 'request') and self.request.user.is_authenticated:
-                    TextAnalysisResult.objects.create(
-                        user=self.request.user,
-                        text=text,
-                        prediction=ml_result.get('prediction', 'unknown'),
-                        confidence=result['confidence'],
-                        reason=result['reason']
-                    )
-                
-        except Exception as e:
-            print(f"Error analyzing text: {e}")
-            # Fallback to simple analysis
-            if any(word in text.lower() for word in ['hate', 'stupid', 'idiot']):
-                result['status'] = 'blocked'
-                result['confidence'] = 0.92
-                result['reason'] = "Detected hate speech and offensive language"
-            elif any(word in text.lower() for word in ['dislike', 'not good', 'bad']):
-                result['status'] = 'flagged'
-                result['confidence'] = 0.78
-                result['reason'] = "Potentially negative content detected"
-            
-        return result
-
-    def _analyze_image(self, image):
-        # Default values
-        result = {
-            'status': 'clean',
-            'confidence': 0.95,
-            'reason': None
-        }
-        
-        if not image:
-            return result
-            
-        try:
-            # Create a mock request to pass to the ML view
-            factory = RequestFactory()
-            mock_request = factory.post(
-                '/ml/analyze-image/',
-                {'image': image},
-                format='multipart'
-            )
-            
-            # Call the ML view directly
-            response = ml_image_api(mock_request)
-            ml_result = json.loads(response.content)
-            
-            if ml_result.get('success'):
-                result['status'] = ml_result.get('status', 'clean')
-                result['confidence'] = ml_result.get('confidence', 0.95)
-                result['reason'] = ml_result.get('reason')
-                
-                # Save analysis result if user is authenticated
-                if hasattr(self, 'request') and self.request.user.is_authenticated:
-                    ImageAnalysisResult.objects.create(
-                        user=self.request.user,
-                        image=image,
-                        prediction=ml_result.get('prediction', 'unknown'),
-                        confidence=result['confidence'],
-                        reason=result['reason']
-                    )
-                
-        except Exception as e:
-            print(f"Error analyzing image: {e}")
-            # For images, we don't have a simple fallback analysis
-            # So we'll just keep the default 'clean' status
-            
-        return result
-
     @swagger_auto_schema(
         operation_description="Like or unlike a post",
         request_body=openapi.Schema(
@@ -507,6 +613,20 @@ class PostViewSet(viewsets.ModelViewSet):
         else:
             post.likes.add(request.user)
             return Response({'status': 'liked'})
+    
+    @swagger_auto_schema(
+        operation_description="Get users who liked this post",
+        responses={
+            200: UserSerializer(many=True),
+            404: 'Post not found'
+        }
+    )
+    @action(detail=True, methods=['get'])
+    def likes(self, request, pk=None):
+        post = self.get_object()
+        users = post.likes.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
 
 # Comment Views
 class CommentViewSet(viewsets.ModelViewSet):
@@ -627,6 +747,31 @@ class FeedView(APIView):
         
         serializer = PostSerializer(posts, many=True, context={'request': request})
         return Response(serializer.data)
+
+# Analysis History Views
+class TextAnalysisHistoryView(generics.ListAPIView):
+    serializer_class = UserSerializer  # Corrected serializer class
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return TextAnalysisResult.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def get_serializer_class(self):
+        # Use a dedicated serializer for TextAnalysisResult
+        from .serializers import TextAnalysisResultSerializer
+        return TextAnalysisResultSerializer
+
+class ImageAnalysisHistoryView(generics.ListAPIView):
+    serializer_class = UserSerializer  # Corrected serializer class
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return ImageAnalysisResult.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def get_serializer_class(self):
+        # Use a dedicated serializer for ImageAnalysisResult
+        from .serializers import ImageAnalysisResultSerializer
+        return ImageAnalysisResultSerializer
 
 # Convert function-based views to class-based views for better Swagger documentation
 class TextAnalysisView(APIView):
