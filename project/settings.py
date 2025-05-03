@@ -7,9 +7,9 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATASET_DIR = os.path.join(BASE_DIR, 'datasets')
-TEXT_MODEL_PATH = os.path.join(DATASET_DIR, 'LSTM.h5')
-IMAGE_MODEL_PATH = os.path.join(DATASET_DIR, 'keras_model.h5')
-CSV_DATASET_PATH = os.path.join(DATASET_DIR, 'CYBER.csv')
+TEXT_MODEL_PATH = os.path.join(DATASET_DIR, 'Text-Analysis.h5')
+IMAGE_MODEL_PATH = os.path.join(DATASET_DIR, 'Image_Analysis.h5')
+CSV_DATASET_PATH = os.path.join(DATASET_DIR, 'Text_Analysing_Dataset.csv')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-your-secret-key-here'

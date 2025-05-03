@@ -51,27 +51,19 @@ def ready_model():
     except Exception as e:
         print(f"Model warmup failed: {str(e)}")
 
+
+from keras.layers import GRU
+from keras.saving import register_keras_serializable
+
+
+
 def load_text_model():
     global text_model, tokenizer, label_encoder
     if text_model is None:
         try:
-            from keras.layers import LSTM
-            from keras.saving import register_keras_serializable
-            
-            # Create a custom LSTM class that filters out unsupported arguments
-            @register_keras_serializable()
-            class CustomLSTM(LSTM):
-                def __init__(self, *args, **kwargs):
-                    # Remove unsupported arguments
-                    kwargs.pop('time_major', None)
-                    super().__init__(*args, **kwargs)
-            
-            # Load the model with the custom class
             text_model = tf.keras.models.load_model(
                 text_model_path,
-                compile=False,
-                custom_objects={'LSTM': CustomLSTM}
-            )
+                compile=False,)
             
             # Compile the model
             optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
@@ -88,14 +80,20 @@ def load_text_model():
             )
             
             label_encoder = LabelEncoder()
-            df['cyberbullying_type'] = label_encoder.fit_transform(
-                df['cyberbullying_type']
-            )
+            df['cyberbullying_type'] = label_encoder.fit_transform(df['cyberbullying_type'])
+            num_classes = len(label_encoder.classes_)
             
             X = df['tweet_text']
+            y = df['cyberbullying_type']
+
+            y = to_categorical(y, num_classes=num_classes)
+
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
             max_words = 10000
             tokenizer = Tokenizer(num_words=max_words)
-            tokenizer.fit_on_texts(X)
+            tokenizer.fit_on_texts(X_train)
             
             return True
         except Exception as e:
