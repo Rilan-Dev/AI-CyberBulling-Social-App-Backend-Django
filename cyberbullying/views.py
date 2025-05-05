@@ -266,7 +266,9 @@ class UserPostsView(APIView):
     )
     def get(self, request, username):
         user = get_object_or_404(User, username=username)
-        posts = Post.objects.filter(user=user, status='clean').order_by('-created_at')
+        posts = Post.objects.filter(user=user
+                                    #  status='clean'
+                                     ).order_by('-created_at')
         serializer = PostSerializer(posts, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -297,7 +299,9 @@ class UserSearchView(generics.ListAPIView):
 
 # Post Views
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.filter(status='clean').order_by('-created_at')
+    # Change this line to include all posts, not just "clean" ones
+    # Original: queryset = Post.objects.filter(status='clean').order_by('-created_at')
+    queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
@@ -638,8 +642,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         # Return all comments if no post_id is specified
         post_id = self.request.query_params.get('post_id')
         if post_id:
-            return Comment.objects.filter(post_id=post_id, status='clean').order_by('created_at')
-        return Comment.objects.filter(status='clean').order_by('-created_at')
+            return Comment.objects.filter(post_id=post_id).order_by('created_at')
+        # return Comment.objects.filter(status='clean').order_by('-created_at')
+        return Comment.objects.all().order_by('-created_at')
 
     @swagger_auto_schema(
         request_body=openapi.Schema(
@@ -741,8 +746,8 @@ class FeedView(APIView):
         # Get posts from users the current user is following
         following_ids = request.user.profile.following.values_list('id', flat=True)
         posts = Post.objects.filter(
-            Q(user_id__in=following_ids) | Q(user=request.user),
-            status='clean'
+            Q(user_id__in=following_ids) | Q(user=request.user)
+            # status='clean'
         ).order_by('-created_at')
         
         serializer = PostSerializer(posts, many=True, context={'request': request})

@@ -44,7 +44,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return obj.following.count()
     
     def get_post_count(self, obj):
-        return Post.objects.filter(user=obj.user, status='clean').count()
+        return Post.objects.filter(user=obj.user
+                                #    status='clean'
+                                   ).count()
     
     def get_followers(self, obj):
         # Return a list of users who follow this user
