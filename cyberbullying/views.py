@@ -382,6 +382,7 @@ class PostViewSet(viewsets.ModelViewSet):
         # Get content and image from request
         content = self.request.data.get('content', '')
         image = self.request.FILES.get('image')
+        model_path = self.request.data.get('model_path', '')  # Get model_path if provided
         
         if not image:
             raise ValidationError({"image": "Image is required"})
@@ -430,7 +431,7 @@ class PostViewSet(viewsets.ModelViewSet):
         factory = RequestFactory()
         mock_request = factory.post(
             '/ml/analyze-image/',
-            {'image': image},
+            {'image': image, 'model_path': model_path},  # Pass model_path
             format='multipart'
         )
         
@@ -486,6 +487,7 @@ class PostViewSet(viewsets.ModelViewSet):
         # Get content and image from request
         content = self.request.data.get('content', instance.content)
         image = self.request.FILES.get('image')
+        model_path = self.request.data.get('model_path', '')  # Get model_path if provided
         
         # For full updates, image is required
         if self.action == 'update' and not image:
@@ -536,7 +538,7 @@ class PostViewSet(viewsets.ModelViewSet):
             factory = RequestFactory()
             mock_request = factory.post(
                 '/ml/analyze-image/',
-                {'image': image},
+                {'image': image, 'model_path': model_path},  # Pass model_path
                 format='multipart'
             )
             
@@ -889,6 +891,13 @@ class ImageAnalysisView(APIView):
                 description="Image file to analyze",
                 type=openapi.TYPE_FILE,
                 required=True
+            ),
+            openapi.Parameter(
+                'model_path', 
+                openapi.IN_FORM, 
+                description="Path indicator for model selection (e.g., 'nsfw' for NSFW detection)",
+                type=openapi.TYPE_STRING,
+                required=False
             )
         ],
         responses={
@@ -902,7 +911,8 @@ class ImageAnalysisView(APIView):
                         'status': openapi.Schema(type=openapi.TYPE_STRING),
                         'confidence': openapi.Schema(type=openapi.TYPE_NUMBER),
                         'reason': openapi.Schema(type=openapi.TYPE_STRING),
-                        'filename': openapi.Schema(type=openapi.TYPE_STRING)
+                        'filename': openapi.Schema(type=openapi.TYPE_STRING),
+                        'model_used': openapi.Schema(type=openapi.TYPE_STRING)
                     }
                 )
             ),
@@ -914,6 +924,7 @@ class ImageAnalysisView(APIView):
         Analyze image for cyberbullying content
         """
         image = request.FILES.get('image')
+        model_path = request.POST.get('model_path', '')
         
         if not image:
             return Response({
@@ -923,8 +934,16 @@ class ImageAnalysisView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
+            # Create a new request with the model_path parameter
+            factory = RequestFactory()
+            mock_request = factory.post(
+                '/ml/analyze-image/',
+                {'image': image, 'model_path': model_path},
+                format='multipart'
+            )
+            
             # Forward directly to ML endpoint
-            response = ml_image_api(request)
+            response = ml_image_api(mock_request)
             result = json.loads(response.content)
             
             if result.get('success'):
@@ -935,7 +954,8 @@ class ImageAnalysisView(APIView):
                     'status': result.get('status', 'clean'),
                     'confidence': result.get('confidence', 0.0),
                     'reason': result.get('reason', 'No reason provided'),
-                    'filename': result.get('filename', image.name)
+                    'filename': result.get('filename', image.name),
+                    'model_used': result.get('model_used', 'primary')
                 }
                 
                 # Save analysis result if user is authenticated
