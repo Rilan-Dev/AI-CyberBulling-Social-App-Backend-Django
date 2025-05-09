@@ -1,3 +1,4 @@
+import json
 import os
 import platform
 import tempfile
@@ -25,6 +26,7 @@ image_model_path = settings.IMAGE_MODEL_PATH
 # Load models (lazy loading to avoid loading on import)
 text_model = None
 image_model = None
+image_model_2 = None  # Second image model
 tokenizer = None
 label_encoder = None
 
@@ -42,20 +44,18 @@ def ready_model():
         input_padded = pad_sequences(input_sequence, maxlen=100)
         text_model.predict(input_padded)
         
-        # Image model warmup
-        if load_image_model():
+        # Image models warmup
+        if load_image_model(model_type="primary"):
             dummy_image = np.zeros((1, 224, 224, 3), dtype=np.float32)
             image_model.predict(dummy_image)
+            
+        if load_image_model(model_type="secondary"):
+            dummy_image = np.zeros((1, 224, 224, 3), dtype=np.float32)
+            image_model_2.predict(dummy_image)
         
         print("Models warmed up successfully")
     except Exception as e:
         print(f"Model warmup failed: {str(e)}")
-
-
-from keras.layers import GRU
-from keras.saving import register_keras_serializable
-
-
 
 def load_text_model():
     global text_model, tokenizer, label_encoder
@@ -101,32 +101,33 @@ def load_text_model():
             return False
     return True
 
-def load_image_model():
-    global image_model
-    if image_model is None:
-        try:
-            from keras.layers import DepthwiseConv2D
-            from keras.saving import register_keras_serializable
-            
-            # Create a custom DepthwiseConv2D class that filters out unsupported arguments
-            @register_keras_serializable()
-            class CustomDepthwiseConv2D(DepthwiseConv2D):
-                def __init__(self, *args, **kwargs):
-                    # Remove unsupported arguments
-                    kwargs.pop('groups', None)
-                    super().__init__(*args, **kwargs)
-            
-            # Load the model with the custom class
-            image_model = tf.keras.models.load_model(
-                image_model_path,
-                compile=False,
-                custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D}
-            )
-            return True
-        except Exception as e:
-            print(f"Error loading image model: {e}")
-            return False
-    return True
+def load_image_model(model_type="primary"):
+    global image_model, image_model_2
+    
+    # Determine which model to load based on model_type
+    if model_type == "primary" and image_model is None:
+        model_path = settings.IMAGE_MODEL_PATH
+        target_model = "image_model"
+    elif model_type == "secondary" and image_model_2 is None:
+        model_path = settings.IMAGE_MODEL_PATH_2  # This will need to be added to settings.py
+        target_model = "image_model_2"
+    else:
+        # Model already loaded or invalid type
+        return True
+    try:
+        # Load the model with the custom class
+        loaded_model = tf.keras.models.load_model(
+            image_model_path
+        )
+        # Assign to the appropriate global variable
+        if target_model == "image_model":
+            image_model = loaded_model
+        else:
+            image_model_2 = loaded_model
+        return True
+    except Exception as e:
+        print(f"Error loading {model_type} image model: {e}")
+        return False
 
 
 @csrf_exempt
@@ -218,7 +219,7 @@ def text_classification_api(request):
 def image_classification_api(request):
     """
     API endpoint for image classification.
-    Accepts POST requests with 'image' file.
+    Accepts POST requests with 'image' file and optional 'model_path' parameter.
     Returns classification result as JSON.
     """
     if request.method != "POST":
@@ -227,9 +228,23 @@ def image_classification_api(request):
     if 'image' not in request.FILES:
         return JsonResponse({"success": False, "error": "No image provided"}, status=400)
     
-    # Load model if not already loaded
-    if not load_image_model():
-        return JsonResponse({"success": False, "error": "Failed to load image classification model"}, status=500)
+    # Get the model path parameter (if provided)
+    model_path = None
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            model_path = data.get('model_path')
+        except:
+            pass
+    else:
+        model_path = request.POST.get('model_path')
+    
+    # Determine which model to use based on the path
+    model_type = "secondary" if model_path and "nsfw" in model_path.lower() else "primary"
+    
+    # Load the appropriate model
+    if not load_image_model(model_type=model_type):
+        return JsonResponse({"success": False, "error": f"Failed to load {model_type} image classification model"}, status=500)
     
     tmp_path = None
     try:
@@ -249,10 +264,22 @@ def image_classification_api(request):
         normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
         data[0] = normalized_image_array
         
+        # Select the appropriate model and classes based on model_type
+        if model_type == "primary":
+            model_to_use = image_model
+            classes = ['humour', 'negative', 'offensive']
+        else:
+            model_to_use = image_model_2
+            classes = ['Non_Offensive', 'NSFW_Content']
+        
         # Make prediction
-        prediction = image_model.predict(data)
-        classes = ['humour', 'negative', 'offensive', 'Non_Offensive', 'NSFW_Content']
+        prediction = model_to_use.predict(data)
         predicted_class = np.argmax(prediction)
+        
+        # Ensure predicted_class is within the range of classes
+        if predicted_class >= len(classes):
+            predicted_class = 0  # Default to first class if out of range
+            
         result = classes[predicted_class]
         confidence = float(prediction[0][predicted_class])
         
@@ -278,7 +305,7 @@ def image_classification_api(request):
         
         reason = reason_mapping.get(result)
         
-        # Save to database if needed
+        # Save to database if needed (without storing the UI path)
         try:
             UserPredictModel.objects.create(image=image_file, label=result)
         except Exception as e:
@@ -290,7 +317,8 @@ def image_classification_api(request):
             "status": status,
             "confidence": confidence,
             "reason": reason,
-            "filename": image_file.name
+            "filename": image_file.name,
+            "model_used": model_type
         })
         
     except Exception as e:

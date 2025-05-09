@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATASET_DIR = os.path.join(BASE_DIR, 'datasets')
 TEXT_MODEL_PATH = os.path.join(DATASET_DIR, 'Text-Analysis.h5')
 IMAGE_MODEL_PATH = os.path.join(DATASET_DIR, 'Image_Analysis.h5')
+IMAGE_MODEL_PATH_2 = os.path.join(DATASET_DIR, 'nsfw_model.h5')  # Second image model
 CSV_DATASET_PATH = os.path.join(DATASET_DIR, 'Text_Analysing_Dataset.csv')
 
 # SECURITY WARNING: keep the secret key used in production secret!
