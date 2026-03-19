@@ -29,4 +29,4 @@ RUN python manage.py collectstatic --noinput --clear
 EXPOSE 8000
 
 # Use gunicorn for production
-CMD ["bash", "-c", "python manage.py migrate --noinput && gunicorn project.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2"]
+CMD ["bash", "-c", "python manage.py migrate --noinput && gunicorn project.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 1"]
