@@ -7,9 +7,20 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Prediction, UserPredictModel
 
 # ==============================================================================
-# NVIDIA NIM API Integration
-# This file replaces the local TensorFlow models to prevent OOM errors and
-# provide State-of-the-Art accuracy using Llama-3 and Phi-3-Vision APIs.
+# WARNING: This is an ALTERNATIVE to your current `ml_views.py`.
+# It uses the NVIDIA NIM API (or any OpenAI-compatible API) instead of TensorFlow!
+#
+# ADVANTAGES:
+# 1. NO TensorFlow required (Saves 1GB+ of RAM, perfect for Railway).
+# 2. NO GPU needed on your server.
+# 3. NO training needed. It uses state-of-the-art LLMs (like Llama-3) instantly.
+#
+# SETUP INSTRUCTIONS:
+# 1. Go to https://build.nvidia.com/
+# 2. Create an account and get a free API Key.
+# 3. Add `NVIDIA_API_KEY=your_key_here` to your `.env` file on Railway.
+# 4. Replace the contents of your actual `ml_views.py` with this file.
+# 5. Remove `tensorflow` and `keras` from `requirements.txt`.
 # ==============================================================================
 
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "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")
@@ -34,6 +45,7 @@ def text_classification_api(request):
     if not NVIDIA_API_KEY:
         return JsonResponse({"success": False, "error": "NVIDIA_API_KEY not configured"}, status=500)
 
+    # Call NVIDIA NIM API
     invoke_url = "https://integrate.api.nvidia.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {NVIDIA_API_KEY}",
@@ -59,23 +71,28 @@ def text_classification_api(request):
         response = requests.post(invoke_url, headers=headers, json=payload)
         response.raise_for_status()
         
+        # Parse the AI response
         ai_reply = response.json()["choices"][0]["message"]["content"].strip().lower()
         
+        # Clean up response to match our expected categories
         categories = ['age', 'ethnicity', 'religion', 'not_cyberbullying']
-        result = "not_cyberbullying"
+        result = "not_cyberbullying" # Default
         for cat in categories:
             if cat in ai_reply:
                 result = cat
                 break
 
+        # Map to app status
         status_mapping = {
             "not_cyberbullying": "clean",
             "age": "flagged",
             "ethnicity": "blocked",
             "religion": "flagged"
         }
+        
         status = status_mapping.get(result, "flagged")
         
+        # Map reasons
         reason_mapping = {
             "age": "Content contains age-based discrimination or bullying",
             "ethnicity": "Content contains ethnicity-based discrimination or hate speech",
@@ -84,13 +101,14 @@ def text_classification_api(request):
         }
         reason = reason_mapping.get(result)
 
+        # Save to database
         Prediction.objects.create(input_text=text_input, output_label=result)
 
         return JsonResponse({
             "success": True,
             "prediction": result,
             "status": status,
-            "confidence": 0.95,
+            "confidence": 0.95, # APIs don't easily give probabilties for raw text, assuming high confidence
             "reason": reason,
             "processed_text": text_input
         })
@@ -116,19 +134,24 @@ def image_classification_api(request):
     try:
         image_file = request.FILES['image']
         
+        # Convert image to Base64 to send to API
         image_bytes = image_file.read()
         base64_encoded = base64.b64encode(image_bytes).decode('utf-8')
         
+        # Get file extension for MIME type
         ext = image_file.name.split('.')[-1].lower()
         if ext == 'jpg': ext = 'jpeg'
         mime_type = f"image/{ext}"
 
+        # Call NVIDIA Vision API
         invoke_url = "https://integrate.api.nvidia.com/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {NVIDIA_API_KEY}",
             "Content-Type": "application/json"
+            # "Accept": "application/json"
         }
 
+        # Some vision models require specific formatting. Phi-3-Vision uses this format:
         payload = {
             "model": "microsoft/phi-3-vision-128k-instruct",
             "messages": [
@@ -146,13 +169,15 @@ def image_classification_api(request):
 
         ai_reply = response.json()["choices"][0]["message"]["content"].strip()
 
+        # Clean up response to match our expected categories
         categories = ['NSFW_Content', 'offensive', 'negative', 'humour', 'Non_Offensive']
-        result = "Non_Offensive"
+        result = "Non_Offensive" # Default
         for cat in categories:
             if cat.lower() in ai_reply.lower():
                 result = cat
                 break
 
+        # Map to app status
         status_mapping = {
             "humour": "clean",
             "Non_Offensive": "clean",
@@ -160,6 +185,7 @@ def image_classification_api(request):
             "offensive": "blocked",
             "NSFW_Content": "blocked"
         }
+        
         status = status_mapping.get(result, "flagged")
         
         reason_mapping = {
@@ -171,6 +197,8 @@ def image_classification_api(request):
         }
         reason = reason_mapping.get(result)
 
+        # Save to database
+        # Re-seek file pointer to 0 before saving so Django can save the actual file
         image_file.seek(0)
         UserPredictModel.objects.create(image=image_file, label=result)
 

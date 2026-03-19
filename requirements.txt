@@ -4,13 +4,6 @@ djangorestframework-simplejwt
 django-cors-headers
 drf-yasg
 
-numpy>=1.23.5,<2.0.0
-pandas
-tensorflow==2.10.1
-keras==2.10.0
-Pillow>=10.4.0
-joblib
-seaborn
-scikit-learn
+requests
 social-auth-app-django
 gunicorn
