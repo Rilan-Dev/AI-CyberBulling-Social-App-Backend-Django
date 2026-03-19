@@ -8,7 +8,7 @@ numpy
 pandas
 tensorflow==2.10.1
 keras==2.10.0
-Pillow
+Pillow>=10.4.0
 joblib
 seaborn
 scikit-learn
