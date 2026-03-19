@@ -13,3 +13,4 @@ joblib
 seaborn
 scikit-learn
 social-auth-app-django
+gunicorn
