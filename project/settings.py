@@ -169,13 +169,13 @@ SWAGGER_SETTINGS = {
 # Add CSRF trusted origins (Django 4.0+ requirement)
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
-    "https://cybernulling.social.ostechnologies.info/"
+    "https://cybernulling.social.ostechnologies.info"
 ]
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://cybernulling.social.ostechnologies.info/"
+    "https://cybernulling.social.ostechnologies.info"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
