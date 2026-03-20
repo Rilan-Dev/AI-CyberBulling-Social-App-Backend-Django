@@ -1,202 +1,133 @@
-# Cyberbullying Prediction API
+# AI Cyberbullying Social App - Backend (Django)
 
-This is a Django REST Framework API for a cyberbullying prediction system with social media features.
+![Django](https://img.shields.io/badge/django-%23092e20.svg?style=for-the-badge&logo=django&logoColor=white)
+![DjangoREST](https://img.shields.io/badge/DJANGO-REST-ff1709?style=for-the-badge&logo=django&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-%23FF6F00.svg?style=for-the-badge&logo=TensorFlow&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 
-## Features
+A powerful, AI-driven backend for a social media platform designed to proactively detect and mitigate cyberbullying. This project integrates Machine Learning models for real-time text and image analysis within a full-featured social networking API.
 
-- User authentication with JWT tokens
-- User profiles
-- Posts and comments with cyberbullying detection
-- Text and image analysis for cyberbullying content
-- API documentation with Swagger and ReDoc
+## 🔗 Connected Repositories
+- **Frontend (Web UI)**: [AI-CyberBulling-Social-App-Web-UI](https://github.com/Rilan-Dev/AI-CyberBulling-Social-App-Web-UI.git)
 
-## Setup
+## 🚀 Features
 
-### Prerequisites
+- **🛡️ AI-Powered Detection**: Real-time analysis of text and images for cyberbullying content using TensorFlow/Keras models.
+- **🔐 Secure Authentication**: Robust JWT-based authentication system using `djangorestframework-simplejwt`.
+- **👤 User Management**: Comprehensive user profiles, including bio, profile pictures, and follower/following system.
+- **📝 Social Networking**: Full CRUD operations for posts and comments with built-in moderation flags.
+- **📊 Automated Moderation**: Content is automatically flagged or blocked based on AI confidence scores and analysis results.
+- **📖 Interactive API Docs**: Fully documented endpoints with Swagger and ReDoc integration.
+- **🧪 Testing Suite**: Built-in test cases for serializers, views, and ML integration.
 
-- Python 3.8+
-- pip
-- virtualenv (optional)
-- Node.js and npm (for running Postman tests with Newman)
+## 📸 Key Features Showcase
 
-### Installation
+### 🛡️ AI Analysis Engine
+Real-time processing of user-generated content to ensure platform safety.
+![AI Analysis Engine](docs/screenshots/ai_analysis.svg)
 
-1. Clone the repository:
-   \`\`\`
-   git clone https://github.com/yourusername/cyberbullying-prediction-api.git
-   cd cyberbullying-prediction-api
-   \`\`\`
+### 📊 Moderation Dashboard
+Automated flagging and blocking of harmful content based on confidence scores.
+![Moderation Dashboard](docs/screenshots/moderation_dashboard.svg)
 
-2. Create and activate a virtual environment (optional):
-   \`\`\`
+## 🛠️ Technical Stack
+
+- **Framework**: Django 4.2.7 & Django REST Framework 3.14.0
+- **AI/ML**: TensorFlow, Scikit-learn, NumPy, Pandas
+- **Auth**: SimpleJWT (JSON Web Tokens)
+- **Database**: SQLite (Development) / PostgreSQL (Production ready)
+- **Documentation**: drf-yasg (Swagger/OpenAPI)
+- **Image Processing**: Pillow (PIL)
+
+## 📂 Project Structure
+
+```
+AI-CyberBulling-Social-App-Backend-Django/
+├── project/                # Project configuration (settings, urls, asgi, wsgi)
+├── cyberbullying/          # Main application logic
+│   ├── models.py           # Database schemas (Post, Comment, UserProfile, etc.)
+│   ├── views.py            # API ViewSets and logic
+│   ├── ml_views.py         # AI analysis specific endpoints
+│   ├── serializers.py      # DRF Serializers for data validation
+│   └── tests/              # Unit and integration tests
+├── media/                  # Uploaded and analyzed media files
+├── requirements.txt        # Python dependencies
+└── manage.py               # Django management script
+```
+
+## 📥 Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Rilan-Dev/AI-CyberBulling-Social-App-Backend-Django.git
+   cd AI-CyberBulling-Social-App-Backend-Django
+   ```
+
+2. **Set up virtual environment**:
+   ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   \`\`\`
+   # Windows:
+   .\venv\Scripts\activate
+   # Linux/macOS:
+   source venv/bin/activate
+   ```
 
-3. Install dependencies:
-   \`\`\`
+3. **Install dependencies**:
+   ```bash
    pip install -r requirements.txt
-   \`\`\`
+   ```
 
-4. Apply migrations:
-   \`\`\`
+4. **Run Migrations**:
+   ```bash
    python manage.py migrate
-   \`\`\`
+   ```
 
-5. Create a superuser:
-   \`\`\`
+5. **Create Superuser** (optional):
+   ```bash
    python manage.py createsuperuser
-   \`\`\`
+   ```
 
-6. Run the development server:
-   \`\`\`
+6. **Start the server**:
+   ```bash
    python manage.py runserver
-   \`\`\`
+   ```
 
-The API will be available at http://localhost:8000/api/
+## 🔌 API Documentation
 
-## API Documentation
+Once the server is running, you can access the interactive documentation at:
+- **Swagger UI**: `http://localhost:8000/swagger/`
+- **ReDoc**: `http://localhost:8000/redoc/`
 
-- Swagger UI: http://localhost:8000/swagger/
-- ReDoc: http://localhost:8000/redoc/
+### Key Endpoints
 
-## API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/token/` | POST | Obtain JWT access/refresh tokens |
+| `/api/users/register/` | POST | Register a new user |
+| `/api/posts/` | GET/POST | List/Create social media posts |
+| `/api/analyze-text/` | POST | Analyze raw text for cyberbullying |
+| `/api/analyze-image/` | POST | Analyze an image for harmful content |
 
-### Authentication
+## 🧪 Testing
 
-- `POST /api/token` - Get JWT token
-- `POST /api/token/refresh` - Refresh JWT token
-- `POST /api/token/verify` - Verify JWT token
-- `POST /api/users/register` - Register a new user
-- `GET /api/users/me` - Get current user information
+Run the test suite to ensure everything is working correctly:
+```bash
+python manage.py test cyberbullying
+```
 
-### Posts
+## 🤝 Contribution
 
-- `GET /api/posts` - List all posts
-- `POST /api/posts` - Create a new post
-- `GET /api/posts/{id}` - Get a specific post
-- `PUT /api/posts/{id}` - Update a post
-- `DELETE /api/posts/{id}` - Delete a post
-- `POST /api/posts/{id}/like` - Like or unlike a post
+Contributions are welcome! Please follow these steps:
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
-### Comments
+## 📄 License
 
-- `GET /api/comments` - List all comments
-- `POST /api/comments` - Create a new comment
-- `GET /api/comments/{id}` - Get a specific comment
-- `PUT /api/comments/{id}` - Update a comment
-- `DELETE /api/comments/{id}` - Delete a comment
+Distributed under the MIT License. See `LICENSE` for more information.
 
-### Analysis
-
-- `POST /api/analyze-text` - Analyze text for cyberbullying content
-- `POST /api/analyze-image` - Analyze image for cyberbullying content
-
-## Testing with Postman
-
-### Prerequisites for Testing
-
-- **Node.js and npm**: Required to run Newman (Postman CLI)
-  - Download from: https://nodejs.org/
-  - After installation, you should be able to run `node -v` and `npm -v` to verify
-
-- **Newman**: Postman's command-line collection runner
-  - We'll use `npm exec -- newman` to run it without installing globally
-
-### Running Tests
-
-#### Option 1: Using the Provided Scripts (Recommended)
-
-We provide several scripts to make testing easier:
-
-**For Windows users:**
-\`\`\`
-run_tests.bat
-\`\`\`
-
-**For Unix/Linux/Mac users:**
-\`\`\`
-./run_tests.sh
-\`\`\`
-
-**Using Python (cross-platform):**
-\`\`\`
-python run_tests.py
-\`\`\`
-
-These scripts will:
-1. Create a test image if it doesn't exist
-2. Check if the Django server is running and start it if needed
-3. Run the Postman tests using Newman
-
-#### Option 2: Manual Testing
-
-1. Make sure the Django server is running:
-   \`\`\`
-   python manage.py runserver
-   \`\`\`
-
-2. Make sure the test image exists in the backend directory:
-   \`\`\`
-   # The script can create it for you
-   python -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='red'); img.save('test-image.jpg')"
-   \`\`\`
-
-3. Run the tests with Newman:
-   \`\`\`
-   npm exec -- newman run postman_collection.json -e postman_environment.json
-   \`\`\`
-
-#### Option 3: Using Postman Desktop App
-
-1. Import the collection from `postman_collection.json`
-2. Import the environment from `postman_environment.json`
-3. Make sure the test image exists in the backend directory
-4. Run the collection from the Postman app
-
-## Troubleshooting
-
-If you encounter issues with the Postman tests:
-
-1. **401 Unauthorized for Register**: Make sure the RegisterView has `permission_classes = [AllowAny]` and that the global permission class in settings.py is set to `'rest_framework.permissions.AllowAny'`
-
-2. **Image analysis fails**: Ensure the test image file is in the backend directory. You can create it with:
-   ```python
-   from PIL import Image
-   img = Image.new('RGB', (100, 100), color='red')
-   img.save('test-image.jpg')
-   \`\`\`
-
-3. **Token refresh fails**: Make sure you've obtained a valid token first by running the "Get Token" request
-
-4. **Newman command not found**: Make sure Node.js and npm are installed. Try using:
-   \`\`\`
-   npm exec -- newman run postman_collection.json -e postman_environment.json
-   \`\`\`
-   instead of using npx directly.
-
-5. **Windows-specific issues**: If you're on Windows and having trouble with the Python script, try using the batch file:
-   \`\`\`
-   run_tests.bat
-   \`\`\`
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Acknowledgements
-
-- Django REST Framework
-- Simple JWT
-- TensorFlow and scikit-learn for ML models
-- Postman for API testing
+---
+*Developed as part of the AI Cyberbullying Prevention Initiative.*
