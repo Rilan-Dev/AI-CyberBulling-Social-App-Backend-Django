@@ -134,18 +134,31 @@ def image_classification_api(request):
             "Content-Type": "application/json"
         }
 
+        prompt_text = (
+            "Analyze this image and classify its content into exactly ONE of the following categories: "
+            "'NSFW_Content', 'offensive', 'negative', 'humour', or 'Non_Offensive'.\n\n"
+            "CRITICAL DEFINITIONS & RULES:\n"
+            "1. 'NSFW_Content': ONLY use this for EXPLICITLY sexual, pornographic, or highly inappropriate nudity. "
+            "DO NOT use this for women wearing casual, modern, or revealing clothing (like swimsuits, sports bras, or crop tops) unless the context is explicitly sexual.\n"
+            "2. 'offensive': Use this for hate speech, violence, gore, or highly disturbing content. Modern clothing on women is NOT offensive.\n"
+            "3. 'negative': Use this for depressing, sad, or harmful scenarios.\n"
+            "4. 'humour': Use this ONLY for clear jokes, memes, or comedic content. DO NOT use this for selfies, regular photos, or social media marketing.\n"
+            "5. 'Non_Offensive': Use this for normal pictures, selfies, women in modern clothing, marketing images, products, or anything that doesn't violate the above.\n\n"
+            "Reply STRICTLY with the exact category string and nothing else. No explanation."
+        )
+
         payload = {
             "model": "meta/llama-3.2-11b-vision-instruct",
             "messages": [
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": 'Analyze this image and classify the content strictly into exactly ONE of the following tags: "NSFW_Content", "offensive", "negative", "humour", or "Non_Offensive". Reply ONLY with the exact tag string. No explanation.'},
+                        {"type": "text", "text": prompt_text},
                         {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_encoded}"}}
                     ]
                 }
             ],
-            "max_tokens": 10,
+            "max_tokens": 15,
             "temperature": 0.1
         }
 
