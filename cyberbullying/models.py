@@ -8,6 +8,8 @@ class UserProfile(models.Model):
     following = models.ManyToManyField(User, related_name='followers', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    website = models.URLField(blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
     
     def __str__(self):
         return f"{self.user.username}'s profile"

@@ -2,8 +2,15 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATASET_DIR = os.path.join(BASE_DIR, 'datasets')
+TEXT_MODEL_PATH = os.path.join(DATASET_DIR, 'Text-Analysis.h5')
+IMAGE_MODEL_PATH = os.path.join(DATASET_DIR, 'Image_Analysis.h5')
+IMAGE_MODEL_PATH_2 = os.path.join(DATASET_DIR, 'nsfw_model.h5')  # Second image model
+CSV_DATASET_PATH = os.path.join(DATASET_DIR, 'Text_Analysing_Dataset.csv')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-your-secret-key-here'
@@ -11,7 +18,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -162,11 +169,13 @@ SWAGGER_SETTINGS = {
 # Add CSRF trusted origins (Django 4.0+ requirement)
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "https://cybernulling.social.ostechnologies.info"
 ]
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://cybernulling.social.ostechnologies.info"
 ]
 
 CORS_ALLOW_CREDENTIALS = True

@@ -1,0 +1,11 @@
+/.media/
+__pycache__/
+*.pyc
+.venv/
+.git/
+media/
+staticfiles/
+docs/openapi.yaml
+.pytest_cache/
+.mypy_cache/
+node_modules/
