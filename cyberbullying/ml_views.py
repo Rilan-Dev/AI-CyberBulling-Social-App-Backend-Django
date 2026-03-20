@@ -135,11 +135,14 @@ def image_classification_api(request):
         }
 
         payload = {
-            "model": "microsoft/phi-3-vision-128k-instruct",
+            "model": "meta/llama-3.2-11b-vision-instruct",
             "messages": [
                 {
                     "role": "user",
-                    "content": f'Analyze this image and classify the content strictly into exactly ONE of the following tags: "NSFW_Content", "offensive", "negative", "humour", or "Non_Offensive". Reply ONLY with the exact tag string. No explanation. <img src="data:{mime_type};base64,{base64_encoded}" />'
+                    "content": [
+                        {"type": "text", "text": 'Analyze this image and classify the content strictly into exactly ONE of the following tags: "NSFW_Content", "offensive", "negative", "humour", or "Non_Offensive". Reply ONLY with the exact tag string. No explanation.'},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_encoded}"}}
+                    ]
                 }
             ],
             "max_tokens": 10,
