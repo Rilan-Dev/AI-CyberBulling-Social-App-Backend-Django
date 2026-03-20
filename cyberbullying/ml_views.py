@@ -41,9 +41,9 @@ def text_classification_api(request):
     }
     
     prompt = (
-        "You are an AI trained to detect cyberbullying in social media posts. "
+        "You are an AI trained to detect cyberbullying, harassment, and inappropriate content in social media posts. "
         "Analyze the following text and categorize it STRICTLY as exactly one of these labels: "
-        "'age', 'ethnicity', 'religion', or 'not_cyberbullying'. "
+        "'age', 'ethnicity', 'religion', 'gender', 'sexual_harassment', 'other_cyberbullying', or 'not_cyberbullying'. "
         "Reply ONLY with the exact label string. No explanation.\n\n"
         f"Text to analyze: \"{text_input}\""
     )
@@ -51,7 +51,7 @@ def text_classification_api(request):
     payload = {
         "model": "meta/llama3-70b-instruct",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 10,
+        "max_tokens": 15,
         "temperature": 0.1,
     }
 
@@ -61,7 +61,7 @@ def text_classification_api(request):
         
         ai_reply = response.json()["choices"][0]["message"]["content"].strip().lower()
         
-        categories = ['age', 'ethnicity', 'religion', 'not_cyberbullying']
+        categories = ['age', 'ethnicity', 'religion', 'gender', 'sexual_harassment', 'other_cyberbullying', 'not_cyberbullying']
         result = "not_cyberbullying"
         for cat in categories:
             if cat in ai_reply:
@@ -72,14 +72,20 @@ def text_classification_api(request):
             "not_cyberbullying": "clean",
             "age": "flagged",
             "ethnicity": "blocked",
-            "religion": "flagged"
+            "religion": "flagged",
+            "gender": "flagged",
+            "sexual_harassment": "blocked",
+            "other_cyberbullying": "flagged"
         }
         status = status_mapping.get(result, "flagged")
         
         reason_mapping = {
-            "age": "Content contains age-based discrimination or bullying",
-            "ethnicity": "Content contains ethnicity-based discrimination or hate speech",
-            "religion": "Content contains religion-based discrimination or offensive material",
+            "age": "Content contains age-based discrimination or bullying.",
+            "ethnicity": "Content contains ethnicity-based discrimination or hate speech.",
+            "religion": "Content contains religion-based discrimination or offensive material.",
+            "gender": "Content contains gender-based discrimination or bullying.",
+            "sexual_harassment": "Content contains sexual harassment or explicit material.",
+            "other_cyberbullying": "Content contains general cyberbullying or offensive language.",
             "not_cyberbullying": None
         }
         reason = reason_mapping.get(result)
@@ -97,7 +103,6 @@ def text_classification_api(request):
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 
 # ------------------------------------------------------------------------------
 # IMAGE CLASSIFICATION (Using Microsoft Phi-3-Vision via NVIDIA API)
