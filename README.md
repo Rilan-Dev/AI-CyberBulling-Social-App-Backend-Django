@@ -21,6 +21,31 @@ A powerful, AI-driven backend for a social media platform designed to proactivel
 - **📖 Interactive API Docs**: Fully documented endpoints with Swagger and ReDoc integration.
 - **🧪 Testing Suite**: Built-in test cases for serializers, views, and ML integration.
 
+## 🧠 AI Integration & Architecture
+
+This project implements a sophisticated AI-driven moderation workflow.
+
+### 🔬 Machine Learning Models
+- **Text Classification Model**: A custom **Keras/TensorFlow** model trained on cyberbullying datasets. It utilizes a **Tokenizer** and **Padding** sequence approach to categorize text into:
+  - `age`, `ethnicity`, `religion` (Flagged/Blocked)
+  - `not_cyberbullying` (Clean)
+- **Image Classification Models**:
+  - **Primary Model**: Detects `humour`, `negative`, and `offensive` visual content.
+  - **Secondary Model (NSFW)**: Specifically targets `NSFW_Content` and `Offensive` imagery.
+- **Preprocessing Pipeline**: 
+  - Text: Lowercasing, Tokenization, and Padding (Max length: 100).
+  - Image: RGB conversion, Resizing (224x224), and Normalization.
+
+### 🔄 AI Workflow
+1. **Content Submission**: When a user creates a Post or Comment, the data is intercepted by the backend.
+2. **Analysis Pipeline**:
+   - **Text Analysis**: Forwarded to the `text_classification_api` for real-time inference.
+   - **Image Analysis**: Forwarded to the `image_classification_api` for visual scanning.
+3. **Automated Moderation**:
+   - The system calculates an **Overall Status** (`clean`, `flagged`, `blocked`) based on the most restrictive result from both text and image models.
+   - **Confidence Scores**: Each prediction is saved with its confidence level to ensure moderation transparency.
+4. **Persistence**: Analysis reports are stored as `JSONField` within the `Post` model and also logged in `TextAnalysisResult` and `ImageAnalysisResult` for historical auditing.
+
 ## 📸 Key Features Showcase
 
 ### 🛡️ AI Analysis Engine
